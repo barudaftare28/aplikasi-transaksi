@@ -1,0 +1,90 @@
+/* src/App.css */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    background-color: #f4f7f6; /* Latar belakang sedikit abu-abu */
+    color: #333;
+}
+
+.App {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1, h2, h3 {
+    color: #333; /* Judul berwarna biru tua */
+}
+
+table {
+    width: 95%; /* Ganti dari 100% agar ada ruang untuk ditengahkan */
+    max-width: 1200px; /* Opsional: Batas lebar maksimal di layar besar */
+    margin: 2em auto; /* Shorthand: atas/bawah 2em, kiri/kanan auto */
+    border-collapse: collapse;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+th, td {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    /* text-align: left; */
+    text-align: center;
+}
+
+th {
+    background-color: #007BFF; /* Header tabel biru */
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2; /* Warna zebra untuk baris tabel */
+}
+
+button {
+    background-color: #007BFF; /* Warna tombol biru */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 5px;
+}
+
+button:hover {
+    background-color: #0056b3; /* Warna tombol saat disentuh mouse */
+}
+
+.btn-edit {
+    background-color: #ffc107; /* Kuning */
+}
+.btn-edit:hover {
+    background-color: #e0a800;
+}
+.btn-delete {
+    background-color: #dc3545; /* Merah */
+}
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+input, select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box; /* Penting agar padding tidak merusak lebar */
+}
+
+form {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+tbody tr:hover {
+    background-color: #e9ecef; /* Warna akan sedikit berubah saat mouse di atasnya */
+}
