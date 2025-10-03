@@ -1,133 +1,139 @@
 // src/components/TransactionList.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
 const TransactionList = () => {
-    // State untuk menyimpan data yang sudah dikelompokkan
-    const [groupedTransactions, setGroupedTransactions] = useState({});
+    // --- STATE MANAGEMENT ---
+    const [transactions, setTransactions] = useState([]); // Untuk data mentah dari API
+    const [sortConfig, setSortConfig] = useState({ key: 'transactionDate', direction: 'ascending' });
+    const [editingId, setEditingId] = useState(null);
+    const [editFormData, setEditFormData] = useState({});
 
-      const [editingId, setEditingId] = useState(null); // Menyimpan ID baris yang diedit
-    const [editText, setEditText] = useState('');    // Menyimpan teks yang sedang diedit
+    // --- DATA FETCHING ---
+    useEffect(() => {
+        axios.get('http://localhost:4000/api/transactions')
+            .then(response => {
+                setTransactions(response.data.data);
+            })
+            .catch(error => console.error("Error fetching data:", error));
+    }, []);
+
+    // --- LOGIKA SORTING & GROUPING ---
+    const sortedTransactions = useMemo(() => {
+        let sortableItems = [...transactions];
+        if (sortConfig.key !== null) {
+            sortableItems.sort((a, b) => {
+                // Konversi amount ke angka untuk sorting numerik
+                const valA = sortConfig.key === 'amount' ? Number(a[sortConfig.key]) : a[sortConfig.key];
+                const valB = sortConfig.key === 'amount' ? Number(b[sortConfig.key]) : b[sortConfig.key];
+
+                if (valA < valB) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (valA > valB) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [transactions, sortConfig]);
+
+    const groupedTransactions = useMemo(() => {
+        return sortedTransactions.reduce((acc, transaction) => {
+            const date = new Date(transaction.transactionDate);
+            const year = date.getFullYear();
+            const month = date.toLocaleString('id-ID', { month: 'long' });
+            const key = `${month} ${year}`;
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(transaction);
+            return acc;
+        }, {});
+    }, [sortedTransactions]);
+
+    // --- FUNGSI-FUNGSI HANDLER ---
+    const requestSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const handleDelete = (id) => {
+        if (window.confirm("Apakah Anda yakin ingin menghapus data ini?")) {
+            axios.delete(`http://localhost:4000/api/transactions/${id}`)
+                .then(() => {
+                    alert("Data berhasil dihapus!");
+                    window.location.reload();
+                })
+                .catch(error => console.error("Error deleting data:", error));
+        }
+    };
 
     const handleEdit = (transaction) => {
         setEditingId(transaction.id);
-        setEditText(transaction.productName);
+        setEditFormData(transaction);
     };
 
     const handleInputChange = (e) => {
-        setEditText(e.target.value);
+        const { name, value } = e.target;
+        setEditFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSave = (id) => {
-        // Logika untuk mengirim update ke API
-        axios.put(`http://localhost:4000/api/transactions/${id}`, { productName: editText })
+        axios.put(`http://localhost:4000/api/transactions/${id}`, editFormData)
             .then(() => {
-                setEditingId(null); // Keluar dari mode edit
-                window.location.reload(); // Reload untuk melihat perubahan
+                setEditingId(null);
+                window.location.reload();
             })
             .catch(error => console.error("Error updating data:", error));
     };
 
-    // useEffect akan berjalan sekali saat komponen pertama kali ditampilkan
-    useEffect(() => {
-        // Lakukan request GET ke API backend
-        axios.get('http://localhost:4000/api/transactions')
-            .then(response => {
-                const data = response.data.data;
-
-                // Logika untuk mengelompokkan data berdasarkan Tahun dan Bulan
-                const grouped = data.reduce((acc, transaction) => {
-                    const date = new Date(transaction.transactionDate);
-                    const year = date.getFullYear();
-                    // 'long' untuk mendapatkan nama bulan (e.g., "Juli")
-                    const month = date.toLocaleString('id-ID', { month: 'long' }); 
-                    const key = `${month} ${year}`;
-
-                    if (!acc[key]) {
-                        acc[key] = [];
-                    }
-                    acc[key].push(transaction);
-                    return acc;
-                }, {});
-
-                setGroupedTransactions(grouped);
-            })
-            .catch(error => console.error("Error fetching data:", error));
-    }, []); // Array kosong berarti efek ini hanya berjalan sekali
-
     const statusMap = { 0: 'SUCCESS', 1: 'FAILED' };
 
-    const handleDelete = (id) => {
-    // Minta konfirmasi dari pengguna sebelum menghapus
-    const confirmDelete = window.confirm("Apakah Anda yakin ingin menghapus data ini?");
-
-    if (confirmDelete) {
-        axios.delete(`http://localhost:4000/api/transactions/${id}`)
-            .then(() => {
-                alert("Data berhasil dihapus!");
-                // Muat ulang halaman untuk melihat daftar yang diperbarui (cara termudah)
-                window.location.reload();
-            })
-            .catch(error => {
-                console.error("Error deleting data:", error);
-                alert("Gagal menghapus data.");
-            });
-    }
-};
-
+    // --- RENDER ---
     return (
         <div style={{ padding: '20px' }}>
             <h1>Daftar Transaksi</h1>
-            <Link to="/add">
-                <button>Tambah Data Baru</button>
-            </Link>
-            
-            {/* Loop melalui setiap grup (misal: "Juli 2022") */}
-            {Object.keys(groupedTransactions)
-            .sort((a, b)=>{
-                //Ambil tanggal dari item pertama tiap grup untuk banding
-                const dateA = new Date(groupedTransactions[a][0].transactionDate);
-                const dateB = new Date(groupedTransactions[b][0].transactionDate);
+            <Link to="/add"><button>Tambah Data Baru</button></Link>
 
-                //urutkan dari terlama ke terbaru (Bulan Juli -> Agustus -> Sept)
-                return dateA - dateB;
-            })
-
-            .map(groupKey => (
+            {Object.keys(groupedTransactions).map(groupKey => (
                 <div key={groupKey} style={{ marginBottom: '2em' }}>
                     <h3>{groupKey}</h3>
                     <table>
                         <thead>
                             <tr>
-                                <th style={{ padding: '8px', width: '40px' }}>No</th>
-                                <th style={{ padding: '8px' }}>Product ID</th>
-                                <th style={{ padding: '8px' }}>Product Name</th>
-                                <th style={{ padding: '8px' }}>Amount</th>
-                                <th style={{ padding: '8px' }}>Customer Name</th>
-                                <th style={{ padding: '8px' }}>Status</th>
-                                <th style={{ padding: '8px' }}>Transaction Date</th>
-                                <th style={{ padding: '8px' }}>Actions</th> {/* <-- TAMBAHKAN HEADER INI */}
-
+                                <th style={{ padding: '8px', width: '40px' }}>No.</th>
+                                <th style={{ cursor: 'pointer' }} onClick={() => requestSort('productID')}>Product ID</th>
+                                <th style={{ cursor: 'pointer' }} onClick={() => requestSort('productName')}>Product Name</th>
+                                <th style={{ cursor: 'pointer' }} onClick={() => requestSort('amount')}>Amount</th>
+                                <th style={{ cursor: 'pointer' }} onClick={() => requestSort('customerName')}>Customer Name</th>
+                                <th style={{ cursor: 'pointer' }} onClick={() => requestSort('status')}>Status</th>
+                                <th style={{ cursor: 'pointer' }} onClick={() => requestSort('transactionDate')}>Transaction Date</th>
+                                <th style={{ padding: '8px' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {/* Loop melalui setiap transaksi di dalam grup */}
                             {groupedTransactions[groupKey].map((tx, index) => (
                                 <tr key={tx.id}>
-                                    <td style={{ padding: '8px', textAlign: 'center' }}>{index + 1}</td>
-                                    <td style={{ padding: '8px' }}>{tx.productID}</td>
-                                    <td style={{ padding: '8px' }}>{tx.productName}</td>
-                                    <td style={{ padding: '8px' }}>{tx.amount}</td>
-                                    <td style={{ padding: '8px' }}>{tx.customerName}</td>
-                                    <td style={{ 
-                                        padding: '8px', 
-                                        fontWeight: 'bold',
-                                        color: tx.status === 0 ? 'green' : 'red' 
-                                    }}>
-                                        {statusMap[tx.status]}
-                                    </td>                                    <td style={{ padding: '8px' }}>{tx.transactionDate}</td>
-                                    <td style={{ padding: '8px' }}>
+                                    <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                                    <td>{tx.productID}</td>
+                                    <td onDoubleClick={() => handleEdit(tx)}>
+                                        {editingId === tx.id ? (
+                                            <input type="text" name="productName" value={editFormData.productName} onChange={handleInputChange} onBlur={() => handleSave(tx.id)} onKeyDown={(e) => { if (e.key === 'Enter') handleSave(tx.id) }} autoFocus />
+                                        ) : ( tx.productName )}
+                                    </td>
+                                    <td style={{textAlign: 'center'}}>{tx.amount}</td>
+                                    <td onDoubleClick={() => handleEdit(tx)}>
+                                        {editingId === tx.id ? (
+                                            <input type="text" name="customerName" value={editFormData.customerName} onChange={handleInputChange} onBlur={() => handleSave(tx.id)} onKeyDown={(e) => { if (e.key === 'Enter') handleSave(tx.id) }} />
+                                        ) : ( tx.customerName )}
+                                    </td>
+                                    <td style={{ fontWeight: 'bold', color: tx.status === 0 ? 'green' : 'red' }}>{statusMap[tx.status]}</td>
+                                    <td>{tx.transactionDate}</td>
+                                    <td>
                                         <Link to={`/view/${tx.id}`}><button>View</button></Link>
                                         <Link to={`/edit/${tx.id}`}><button className="btn-edit">Edit</button></Link>
                                         <button className="btn-delete" onClick={() => handleDelete(tx.id)}>Delete</button>
