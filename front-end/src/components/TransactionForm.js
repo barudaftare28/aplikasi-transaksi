@@ -63,6 +63,7 @@ const TransactionForm = () => {
                 <input name="productID" value={formData.productID} onChange={handleChange} placeholder="Product ID" required />
                 <input name="productName" value={formData.productName} onChange={handleChange} placeholder="Product Name" required />
                 <input name="amount" type="number" value={formData.amount} onChange={handleChange} placeholder="Amount" required />
+                <input name="customerName" value={formData.customerName} onChange={handleChange} placeholder="Customer Name" required />
                 <input name="transactionDate" type="datetime-local" value={formData.transactionDate} onChange={handleChange} required />
                 <select name="status" value={formData.status} onChange={handleChange}>
                     <option value={0}>SUCCESS</option>

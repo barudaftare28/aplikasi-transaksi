@@ -7,6 +7,28 @@ const TransactionList = () => {
     // State untuk menyimpan data yang sudah dikelompokkan
     const [groupedTransactions, setGroupedTransactions] = useState({});
 
+      const [editingId, setEditingId] = useState(null); // Menyimpan ID baris yang diedit
+    const [editText, setEditText] = useState('');    // Menyimpan teks yang sedang diedit
+
+    const handleEdit = (transaction) => {
+        setEditingId(transaction.id);
+        setEditText(transaction.productName);
+    };
+
+    const handleInputChange = (e) => {
+        setEditText(e.target.value);
+    };
+
+    const handleSave = (id) => {
+        // Logika untuk mengirim update ke API
+        axios.put(`http://localhost:4000/api/transactions/${id}`, { productName: editText })
+            .then(() => {
+                setEditingId(null); // Keluar dari mode edit
+                window.location.reload(); // Reload untuk melihat perubahan
+            })
+            .catch(error => console.error("Error updating data:", error));
+    };
+
     // useEffect akan berjalan sekali saat komponen pertama kali ditampilkan
     useEffect(() => {
         // Lakukan request GET ke API backend
@@ -60,8 +82,19 @@ const TransactionList = () => {
             <Link to="/add">
                 <button>Tambah Data Baru</button>
             </Link>
+            
             {/* Loop melalui setiap grup (misal: "Juli 2022") */}
-            {Object.keys(groupedTransactions).map(groupKey => (
+            {Object.keys(groupedTransactions)
+            .sort((a, b)=>{
+                //Ambil tanggal dari item pertama tiap grup untuk banding
+                const dateA = new Date(groupedTransactions[a][0].transactionDate);
+                const dateB = new Date(groupedTransactions[b][0].transactionDate);
+
+                //urutkan dari terlama ke terbaru (Bulan Juli -> Agustus -> Sept)
+                return dateA - dateB;
+            })
+
+            .map(groupKey => (
                 <div key={groupKey} style={{ marginBottom: '2em' }}>
                     <h3>{groupKey}</h3>
                     <table>
@@ -98,8 +131,6 @@ const TransactionList = () => {
                                         <Link to={`/view/${tx.id}`}><button>View</button></Link>
                                         <Link to={`/edit/${tx.id}`}><button className="btn-edit">Edit</button></Link>
                                         <button className="btn-delete" onClick={() => handleDelete(tx.id)}>Delete</button>
-                                        <button onClick={() => handleDelete(tx.id)}>Delete</button> {/* <-- TAMBAHKAN TOMBOL INI */}
-
                                     </td>
                                 </tr>
                             ))}
